@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt Scanner</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js"></script>
+</head>
+<body>
+    <header class="banner">
+        <h1>Receipt Scanner</h1>
+        <div class="container">
+            <input type="file" onchange="readFile(event)" id="json-input" class="styled-input">
+            <button onclick="calculateSplit()" id="calculateButton" class="styled-button">Calculate Split</button>
+            <button onclick="reset()" id="resetButton" class="styled-button reset-button">Reset</button>
+        </div>
+    </header>
+   <!--
+    <div id="camera-container">
+        <video id="video" autoplay></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+        <button class="btn" onclick="openCamera()">Open Camera</button>
+        <button class="btn" onclick="takePhoto()">Capture Photo</button>
+        <button class="btn" onclick="closeCamera()">Close Camera</button>
+    </div>
+-->
+    <br>
+    <table class = "table" id= "table-body">
+        <tr>
+            <th>Product</th>
+            <th>Amount</th>
+            <th>1 <input type="checkbox" onclick="checkAll1()" id="check1"></th>
+            <th>2 <input type="checkbox" onchange="checkAll2()" id="check2"></th>
+            <th>3 <input type="checkbox" onchange="checkAll3()" id="check3"></th>
+            <th>4 <input type="checkbox" onchange="checkAll4()" id="check4"></th>
+        </tr>
+    </table>
+
+    <!--<img id="captured-photo" src="placeholder.jpg" alt="Captured Photo"> -->
+
+</body>
+</html>

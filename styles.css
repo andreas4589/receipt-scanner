@@ -1,0 +1,144 @@
+* {
+    font-family:Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+}
+
+.btn {
+    background-color: black;
+    color: white;
+    padding: 14px 20px;
+    margin: 8px 0;
+    border: none;
+    cursor: pointer;
+    width: 28%;
+    opacity: 0.9;
+    position: relative;
+    border-radius: 40%;
+}
+
+#camera-container {
+    position: center;
+    width: 30%;
+    height: 100%;
+    border: 10px solid black;
+}
+
+#video {
+    width: 100%;
+    height: 100%;
+}
+
+#captured-photo {
+    width: 20%;
+    height: 20%;
+    border: 2px solid red;
+    display: flexbox;
+    justify-content: space-around;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse; /* Remove space between cells */
+    margin: 20px 0;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Table header styling */
+  .table th {
+    background-color: #007bff; /* Blue background */
+    color: white; /* White text */
+    padding: 12px 15px;
+    text-align: left;
+    font-size: 16px;
+    border-bottom: 2px solid #0056b3; /* Darker blue border */
+  }
+  
+  /* Table row styling */
+  .table tr {
+    border-bottom: 1px solid #dddddd; /* Light gray border between rows */
+  }
+  
+  /* Alternate row coloring for better readability */
+  .table tr:nth-child(even) {
+    background-color: #f9f9f9; /* Light gray background for even rows */
+  }
+  
+  .table tr:hover {
+    background-color: #f1f1f1; /* Light gray background on hover */
+  }
+  
+  /* Table cell styling */
+  .table td {
+    padding: 12px 15px;
+    font-size: 14px;
+    color: #333; /* Dark gray text */
+  }
+  
+  /* Add a border to the last row */
+  .table tr:last-child {
+    border-bottom: 2px solid #007bff; /* Blue border for the last row */
+  }
+
+/* General container styling */
+.container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+/* Styling for the file input */
+.styled-input {
+    padding: 5px;
+    border: 2px solid #007bff;
+    border-radius: 5px;
+    background-color: white;
+    font-size: 16px;
+    color: #333;
+    cursor: pointer;
+}
+  
+.styled-input:hover {
+    border-color: #0056b3;
+}
+
+/* Styling for the buttons */
+.styled-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.styled-button:hover {
+    background-color: #0056b3;
+}
+
+/* Specific styling for the reset button */
+.reset-button {
+    background-color: #dc3545;
+}
+
+.reset-button:hover {
+    background-color: #c82333;
+}
+
+h1{
+    text-align: center;
+    font-weight: bolder;
+    font-size: 3em;
+}
+
+header {
+    background-image: url("images/background.jpg");
+    background-size: 80%;
+}
+
+
