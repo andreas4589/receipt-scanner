@@ -180,7 +180,7 @@ function readFile(e) {
     console.log("Processing image with OCR...");
     
     // Send file to server endpoint that runs ocrtest.py
-    fetch('http://localhost:3000/process-receipt', {
+    fetch('https://receipt-splitter-x5at.onrender.com/process-receipt', {
         method: 'POST',
         body: formData
     })
