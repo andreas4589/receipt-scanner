@@ -114,8 +114,3 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.listen(3000, () => {
-    console.log('Server running on port 3000');
-    console.log('Open your browser to: http://localhost:3000');
-    console.log('Test the server: http://localhost:3000/test');
-});
