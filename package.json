@@ -1,16 +1,14 @@
 {
-  "name": "ocr",
+  "name": "receipt-scanner",
   "version": "1.0.0",
+  "description": "",
   "main": "app.js",
   "scripts": {
+    "start": "node app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
-    "express": "^5.1.0",
-    "multer": "^2.0.2"
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1"
   }
 }
