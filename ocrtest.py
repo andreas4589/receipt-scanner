@@ -1,32 +1,34 @@
-# from paddleocr import PaddleOCR
-# import re
-
-# ocr = PaddleOCR(
-#     use_doc_orientation_classify=False, 
-#     use_doc_unwarping=False, 
-#     use_textline_orientation=False)
-
-# result = ocr.predict("./bon.png")
-# for res in result:
-#     res.print()
-#     # res.save_to_img("output")
-#     # res.save_to_json("output")
-    
-# list = result[0]['rec_texts']
-
 import os
 from google.cloud import vision
 import re
 from collections import defaultdict
-from reportlab.pdfgen import canvas# type: ignore
-from reportlab.lib.pagesizes import letter # type: ignore
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter 
 import sys
 import json
+import tempfile
 from datetime import datetime
+from google.oauth2 import service_account
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = \
-r"C:/Users/31617/Documents/cloud-vision-api.json"
+# Handle Google Cloud credentials from environment variable
+def setup_google_credentials():
+    """Setup Google Cloud credentials from environment variable"""
+    credentials_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON')
+    
+    if credentials_json:
+        # Create a temporary file with the credentials
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as temp_file:
+            temp_file.write(credentials_json)
+            temp_file_path = temp_file.name
+        
+        # Set the environment variable to point to the temp file
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = temp_file_path
+        return temp_file_path
+    
+    return None
 
+# Setup credentials and create client
+temp_cred_file = setup_google_credentials()
 client = vision.ImageAnnotatorClient()
 
 def extract_products_from_receipt(image_path, client):
@@ -246,4 +248,10 @@ if __name__ == "__main__":
         print(f"Error: Image file '{image_path}' not found.")
     except Exception as e:
         print(f"Error processing receipt: {e}")
-
+    finally:
+        # Clean up temporary credentials file if it was created
+        if temp_cred_file and os.path.exists(temp_cred_file):
+            try:
+                os.unlink(temp_cred_file)
+            except:
+                pass  # Ignore errors when cleaning up temp file
