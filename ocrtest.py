@@ -11,25 +11,39 @@ from datetime import datetime
 from google.oauth2 import service_account
 
 # Handle Google Cloud credentials from environment variable
-def setup_google_credentials():
-    """Setup Google Cloud credentials from environment variable"""
+def create_vision_client():
+    """Create Vision API client with proper credentials handling"""
     credentials_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON')
     
     if credentials_json:
-        # Create a temporary file with the credentials
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as temp_file:
-            temp_file.write(credentials_json)
-            temp_file_path = temp_file.name
-        
-        # Set the environment variable to point to the temp file
-        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = temp_file_path
-        return temp_file_path
-    
-    return None
+        try:
+            # Parse the JSON credentials
+            credentials_dict = json.loads(credentials_json)
+            
+            # Create credentials from the dictionary
+            credentials = service_account.Credentials.from_service_account_info(
+                credentials_dict,
+                scopes=['https://www.googleapis.com/auth/cloud-platform']
+            )
+            
+            # Create client with explicit credentials
+            return vision.ImageAnnotatorClient(credentials=credentials)
+        except json.JSONDecodeError as e:
+            print(f"Error parsing credentials JSON: {e}")
+            return None
+    else:
+        # Fallback to default credentials (for local development)
+        try:
+            return vision.ImageAnnotatorClient()
+        except Exception as e:
+            print(f"Error creating Vision client with default credentials: {e}")
+            return None
 
-# Setup credentials and create client
-temp_cred_file = setup_google_credentials()
-client = vision.ImageAnnotatorClient()
+# Create client
+client = create_vision_client()
+if not client:
+    print("Failed to create Vision API client")
+    sys.exit(1)
 
 def extract_products_from_receipt(image_path, client):
     """Extract product names and prices from a receipt image."""
@@ -248,10 +262,3 @@ if __name__ == "__main__":
         print(f"Error: Image file '{image_path}' not found.")
     except Exception as e:
         print(f"Error processing receipt: {e}")
-    finally:
-        # Clean up temporary credentials file if it was created
-        if temp_cred_file and os.path.exists(temp_cred_file):
-            try:
-                os.unlink(temp_cred_file)
-            except:
-                pass  # Ignore errors when cleaning up temp file
