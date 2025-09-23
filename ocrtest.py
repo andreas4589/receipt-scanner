@@ -31,13 +31,16 @@ def create_vision_client():
         except json.JSONDecodeError as e:
             print(f"Error parsing credentials JSON: {e}")
             return None
-    else:
-        # Fallback to default credentials (for local development)
-        try:
-            return vision.ImageAnnotatorClient()
         except Exception as e:
-            print(f"Error creating Vision client with default credentials: {e}")
+            print(f"Error creating Vision client from JSON credentials: {e}")
             return None
+    else:
+        print("No GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable found")
+        return None
+
+# Clear any existing GOOGLE_APPLICATION_CREDENTIALS to avoid conflicts
+if 'GOOGLE_APPLICATION_CREDENTIALS' in os.environ:
+    del os.environ['GOOGLE_APPLICATION_CREDENTIALS']
 
 # Create client
 client = create_vision_client()
