@@ -233,6 +233,16 @@ kbd {
     text-align: left;
 }
 
+/* Add this to your styles.css */
+.receipt-table th.product-col {
+    text-align: left;
+}
+
+/* Ensure data cells are also left-aligned */
+.receipt-table td.product-col {
+    text-align: left;
+}
+
 .amount-col {
     width: 20%;
     text-align: center;
@@ -412,6 +422,62 @@ span{
     padding: 2rem;
     color: #666;
     font-size: 0.9rem;
+}
+
+.styled-button.add {
+    background: #28a745;
+    color: white;
+    border: 2px solid #28a745;
+    .delete-btn {
+        font-size: 1rem;
+        padding: 0.2rem 0.4rem;
+    }
+    
+    .delete-col {
+        width: 6%;
+    }
+}
+
+.styled-button.add:hover {
+    background: #1e7e34;
+    border-color: #1e7e34;
+    transform: translateY(-2px);
+}
+
+.product-input{
+    border: none;
+    background-color: transparent;
+}
+
+/* Add this to your styles.css */
+.split-control-container {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Center the controls in the column */
+}
+
+.split-weight-input {
+    width: 30px; /* Small width for the integer input */
+    margin-left: 5px;
+    padding: 2px 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    text-align: center;
+    font-size: 0.85em;
+    height: 1.5em; /* Make it match the checkbox height */
+}
+
+/* For Chrome, Safari, Edge */
+.split-weight-input::-webkit-outer-spin-button,
+.split-weight-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* For Firefox */
+.split-weight-input[type='number'] {
+    appearance: textfield;
+    -moz-appearance: textfield;
 }
 
 /* Responsive Design */

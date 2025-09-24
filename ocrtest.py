@@ -142,62 +142,150 @@ def extract_products_from_receipt(image_path, client):
     
     return products
 
-def write_products_to_pdf(products, output_path="extracted_products.pdf"):
-    """Write extracted products to a PDF file."""
+def write_products_to_pdf(products_with_split, person_names, person_totals, output_path="extracted_split_receipt.pdf"):
+    """
+    Writes extracted products, their amounts, the split weights, and the final 
+    person totals to a PDF file.
+
+    Args:
+        products_with_split (list): A list of tuples: (product_name, price, [weights])
+        person_names (list): A list of strings for person headers (e.g., ["Person 1", "Person 2"])
+        person_totals (list): A list of final amounts owed by each person (e.g., [15.90, 10.30, ...])
+        output_path (str): The path to save the PDF.
+    """
     
-    # Create PDF
+    # --- PDF Setup ---
     c = canvas.Canvas(output_path, pagesize=letter)
     width, height = letter
     
-    # Set up the document
-    c.setTitle("Extracted Receipt Products")
+    # Column positions
+    # Product Name starts at 50
+    # Price starts at 400
+    # Weights columns start from 470
+    x_product = 50
+    x_price = 400
+    x_weights_start = 470
+    x_weights_step = 30 
+    
+    # --- Title and Header ---
+    c.setTitle("Split Receipt Summary")
     c.setFont("Helvetica-Bold", 16)
-    c.drawString(50, height - 50, "Receipt Products")
+    c.drawString(x_product, height - 50, "Detailed Split Receipt")
     
     # Draw a line under the title
-    c.line(50, height - 70, width - 50, height - 70)
+    c.line(x_product, height - 70, width - x_product, height - 70)
     
-    # Set font for content
-    c.setFont("Helvetica", 12)
+    # --- Column Headers ---
+    c.setFont("Helvetica-Bold", 10)
+    y_position = height - 90
     
-    # Calculate totals
-    total_price = sum(price for _, price in products)
+    # Product and Amount header
+    c.drawString(x_product, y_position, "Product")
+    c.drawString(x_price, y_position, "Amount")
     
-    # Write products
-    y_position = height - 100
-    for product, price in products:
+    # Weights headers (P1, P2, P3, P4)
+    x = x_weights_start
+    for name in person_names:
+        # Use only the number (1, 2, 3, 4) for the column header
+        c.drawString(x, y_position, name.split()[-1]) 
+        x += x_weights_step
+        
+    # Line under headers
+    y_position -= 5
+    c.line(x_product, y_position, width - x_product, y_position)
+    y_position -= 15
+    
+    # --- Product Details and Splits ---
+    total_price = 0
+    c.setFont("Helvetica", 9)
+    
+    for product, price, weights in products_with_split:
+        total_price += price
+        
         if y_position < 100:  # Start new page if needed
             c.showPage()
-            c.setFont("Helvetica", 12)
+            c.setFont("Helvetica-Bold", 10)
             y_position = height - 50
+            
+            # Redraw headers on new page
+            c.drawString(x_product, y_position, "Product")
+            c.drawString(x_price, y_position, "Amount")
+            x = x_weights_start
+            for name in person_names:
+                c.drawString(x, y_position, name.split()[-1])
+                x += x_weights_step
+            
+            y_position -= 5
+            c.line(x_product, y_position, width - x_product, y_position)
+            y_position -= 15
+            c.setFont("Helvetica", 9)
         
-        # Draw product name on the left
-        c.drawString(50, y_position, product)
+        # Draw product name (left-aligned)
+        c.drawString(x_product, y_position, product)
         
-        # Draw price aligned to the right margin
+        # Draw price (right-aligned in its column)
         price_text = f"€{price:.2f}"
-        price_width = c.stringWidth(price_text, "Helvetica", 12)
-        c.drawString(width - 50 - price_width, y_position, price_text)
+        price_width = c.stringWidth(price_text, "Helvetica", 9)
+        c.drawString(x_price + 30 - price_width, y_position, price_text) 
         
-        y_position -= 20
+        # Draw weights (centered in their columns)
+        x = x_weights_start
+        for weight in weights:
+            # Ensure weight is treated as an integer for display
+            weight = int(weight)
+            weight_text = str(weight) if weight > 0 else ""
+            
+            # Center the text within the 30-unit column space
+            weight_width = c.stringWidth(weight_text, "Helvetica", 9)
+            c.drawString(x + (x_weights_step / 2) - (weight_width / 2), y_position, weight_text)
+            x += x_weights_step
+            
+        y_position -= 12 # Less space for product lines
     
-    # Add total
-    if y_position < 80:
+    # --- Final Totals Section ---
+    if y_position < 100:
         c.showPage()
         y_position = height - 50
     
-    c.line(50, y_position - 10, width - 50, y_position - 10)
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, y_position - 30, "TOTAL:")
+    y_position -= 20
+    c.line(x_product, y_position - 10, width - x_product, y_position - 10)
+    y_position -= 30
     
-    # Draw total amount aligned to the right
+    # Draw Grand Total
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(x_product, y_position, "GRAND TOTAL:")
+    
     total_text = f"€{total_price:.2f}"
     total_width = c.stringWidth(total_text, "Helvetica-Bold", 12)
-    c.drawString(width - 50 - total_width, y_position - 30, total_text)
+    c.drawString(x_price + 30 - total_width, y_position, total_text)
     
+    y_position -= 30
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(x_product, y_position, "Person Split Totals")
+    y_position -= 20
+    c.setFont("Helvetica-Bold", 12)
+    
+    # Draw Split Totals
+    for i, (name, total) in enumerate(zip(person_names, person_totals)):
+        if y_position < 30: # Check if a new page is needed for totals
+            c.showPage()
+            y_position = height - 50
+            c.setFont("Helvetica-Bold", 12)
+        
+        person_text = f"{name}:"
+        total_text = f"€{total:.2f}"
+        
+        c.drawString(x_product, y_position, person_text)
+        
+        # Align total amount with the original price column
+        total_width = c.stringWidth(total_text, "Helvetica-Bold", 12)
+        c.drawString(x_price + 30 - total_width, y_position, total_text)
+        
+        y_position -= 20
+        
     # Add footer
     c.setFont("Helvetica", 8)
-    c.drawString(50, 30, f"Generated from receipt OCR - {len(products)} items found")
+    c.drawString(50, 30, f"Generated from receipt OCR and Splitter App - {len(products_with_split)} items found")
     
     c.save()
     print(f"PDF saved to: {output_path}")
@@ -237,31 +325,3 @@ def write_products_to_json(products, output_path="extracted_products.json"):
     
     return receipt_data
 
-if __name__ == "__main__":
-    # Check if image path is provided as command line argument
-    if len(sys.argv) != 2:
-        print("Usage: python receipt_parser.py <image_path>")
-        print("Example: python receipt_parser.py simple.jpg")
-        sys.exit(1)
-    
-    image_path = sys.argv[1]
-    
-    try:
-        products = extract_products_from_receipt(image_path, client)
-        print("Extracted products:")
-        for product, price in products:
-            print(f"  {product}: €{price:.2f}")
-        
-        # Write to PDF and JSON
-        if products:
-            write_products_to_pdf(products)
-            write_products_to_json(products)
-            print(f"\nTotal items: {len(products)}")
-            print(f"Total amount: €{sum(price for _, price in products):.2f}")
-        else:
-            print("No products found to write to PDF or JSON.")
-            
-    except FileNotFoundError:
-        print(f"Error: Image file '{image_path}' not found.")
-    except Exception as e:
-        print(f"Error processing receipt: {e}")
