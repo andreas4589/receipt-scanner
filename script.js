@@ -21,13 +21,9 @@ function openCamera() {
     navigator.mediaDevices.getUserMedia({ 
         video: { 
             facingMode: 'environment', // Use back camera if available (better for documents)
-            
-            // --- 📸 NEW CONSTRAINTS FOR QUALITY ---
-            width: { ideal: 4096 },  // Request a very high ideal width
-            height: { ideal: 2160 }, // Request a very high ideal height
-            // Optional: Try to force a good focus mode for sharp text
+            width: { ideal: 4096 },  
+            height: { ideal: 2160 }, 
             advanced: [{ focusMode: "continuous" }, { exposureMode: "continuous" }]
-            // ------------------------------------
         } 
     })
     .then(stream => {
@@ -76,18 +72,21 @@ function takePhoto() {
         } else {
             alert("Failed to capture photo. Please try again.");
         }
-    }, 'image/jpeg', 1.0); // JPEG format with 80% quality
+    }, 'image/jpeg', 1.0);
 }
 
 function processImageFile(file) {
-    // Create FormData to send the file to server (same as readFile function)
+    // Create FormData to send the file to server
     const formData = new FormData();
     formData.append('image', file);
     
     console.log("Processing captured image with OCR...");
     
+    // Determine server URL - use localhost for development
+    const serverUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
+    
     // Send file to server endpoint that runs ocrtest.py
-    fetch('https://receipt-splitter-x5at.onrender.com/process-receipt', {  // Fixed: Added /process-receipt
+    fetch(`${serverUrl}/process-receipt`, {
         method: 'POST',
         body: formData
     })
@@ -132,12 +131,6 @@ function hideLoading() {
     loadingOverlay.style.display = 'none';
 }
 
-function extractNumberFromString(str) {
-    // This regex matches numbers, including those with decimal points
-    const match = str.match(/\d+(\.\d+)?/);
-    return match ? parseFloat(match[0]) : null;
-}
-
 function readFile(e) {
     const file = e.target.files[0];
     
@@ -155,8 +148,11 @@ function readFile(e) {
     
     console.log("Processing image with OCR...");
     
+    // Determine server URL - use localhost for development
+    const serverUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
+    
     // Send file to server endpoint that runs ocrtest.py
-    fetch('https://receipt-splitter-x5at.onrender.com/process-receipt', {
+    fetch(`${serverUrl}/process-receipt`, {
         method: 'POST',
         body: formData
     })
@@ -182,8 +178,6 @@ function readFile(e) {
 
 /**
  * Creates the HTML structure for the checkbox and weight input in a person's column.
- * @param {number} personIndex - The index of the person (1-4).
- * @returns {HTMLElement} The container div for the controls.
  */
 function createPersonControls(personIndex) {
     const container = document.createElement("div");
@@ -227,7 +221,6 @@ function createPersonControls(personIndex) {
     return container;
 }
 
-
 function addProductRow() {
     const tableContainer = document.querySelector(".table-container");
     const emptyState = document.getElementById("empty-state");
@@ -253,7 +246,7 @@ function addProductRow() {
     
     // Create new product row
     let tr = document.createElement("tr");
-    tr.classList.add("manual-row"); // Mark as manually added
+    tr.classList.add("manual-row");
 
     // Product name cell with input
     let productCell = document.createElement("td");
@@ -313,7 +306,6 @@ function addProductRow() {
 
     [td3, td4, td5, td6].forEach((td, index) => {
         td.className = "person-col";
-        // *** NEW: Use the new control creator ***
         td.appendChild(createPersonControls(index + 1));
     });
     
@@ -415,11 +407,10 @@ function createTotalRow(tbody) {
 
 function calculateSplit() {
     const table = document.getElementById("table-body");
-    const rows = table.querySelectorAll("tr"); // Get all rows
-    const lastRow = rows[rows.length - 1]; // The last row is always the total
+    const rows = table.querySelectorAll("tr");
+    const lastRow = rows[rows.length - 1];
 
     // Reset the last row's cells to 0 before recalculating
-    // FIX: Loop up to the second-to-last cell (excluding the empty delete-col cell)
     for (let i = 2; i < lastRow.cells.length - 1; i++) {
         lastRow.cells[i].textContent = '0.00';
     }
@@ -430,17 +421,17 @@ function calculateSplit() {
         const amountInput = row.cells[1].querySelector('input.amount-input');
 
         if (!amountInput) {
-            continue; // Skip this iteration if the element is not found
+            continue;
         }
         
         let amountString = amountInput.value.replace(',', '.');
         const amount = parseFloat(amountString);
 
         if (isNaN(amount)) {
-            continue; // Skips to the next item in the loop
+            continue;
         }
 
-        // --- NEW SPLIT LOGIC ---
+        // Get weight inputs
         const weightInputs = Array.from(row.cells).slice(2, 6)
             .map(cell => cell.querySelector('.split-weight-input'));
 
@@ -469,7 +460,7 @@ function calculateSplit() {
         }
     }
 
-    // UPDATE TOTAL COUNTER - This now happens every time calculateSplit is called
+    // Update total counter
     updateTotalCounter();
 }
 
@@ -497,11 +488,11 @@ function updateTotalCounter() {
 
 function reset(){
     const rows = document.querySelectorAll('#table-body tr');
-    const lastRow = rows[rows.length - 1]; // Get the last row
+    const lastRow = rows[rows.length - 1];
     
     // Reset the last row's split totals (excluding the total counter and delete column)
     for (let i = 2; i < lastRow.cells.length - 1; i++) {
-        lastRow.cells[i].textContent = '0.00'; // Reset to 0.00
+        lastRow.cells[i].textContent = '0.00';
     }
 
     // Reset all checkboxes and weight inputs
@@ -526,7 +517,6 @@ function reset(){
 var flip1 = -1;
 function checkAll1() {
     flip1 *= -1;
-    // Select both the checkbox and the weight input
     const checkboxes = document.querySelectorAll('.split-control-container input[class = "checkbox1"]');
 
     checkboxes.forEach(checkbox => {
@@ -541,8 +531,8 @@ function checkAll1() {
             weightInput.style.display = 'none';
             weightInput.value = 0;
         }
-      });
-      calculateSplit(); // Recalculate after checkAll
+    });
+    calculateSplit();
 }
 
 var flip2 = -1;
@@ -562,8 +552,8 @@ function checkAll2() {
             weightInput.style.display = 'none';
             weightInput.value = 0;
         }
-      });
-      calculateSplit();
+    });
+    calculateSplit();
 }
 
 var flip3 = -1;
@@ -583,8 +573,8 @@ function checkAll3() {
             weightInput.style.display = 'none';
             weightInput.value = 0;
         }
-      });
-      calculateSplit();
+    });
+    calculateSplit();
 }
 
 var flip4 = -1;
@@ -604,8 +594,8 @@ function checkAll4() {
             weightInput.style.display = 'none';
             weightInput.value = 0;
         }
-      });
-      calculateSplit();
+    });
+    calculateSplit();
 }
 
 function displayReceipt(receipt){
@@ -679,7 +669,6 @@ function displayReceipt(receipt){
         // Create checkbox/weight cells
         [td3, td4, td5, td6].forEach((td, index) => {
             td.className = "person-col";
-            // *** NEW: Use the new control creator ***
             td.appendChild(createPersonControls(index + 1));
         });
         
@@ -766,68 +755,4 @@ function displayReceipt(receipt){
     tr.appendChild(td6);
     tr.appendChild(td7);
     tbody.appendChild(tr);
-}
-
-function generateAndDownloadPDF() {
-    const tableBody = document.querySelector("#table-body tbody");
-    const productRows = tableBody.querySelectorAll("tr:not(.total-row)");
-    const productsWithSplit = [];
-
-    // 1. Gather product data and split weights
-    productRows.forEach(row => {
-        const productName = row.querySelector('.product-col input') ? row.querySelector('.product-col input').value : row.querySelector('.product-col').textContent;
-        const amount = parseFloat(row.querySelector('.amount-col input').value.replace(',', '.'));
-        const weights = [];
-        row.querySelectorAll('.person-col').forEach(cell => {
-            const weightInput = cell.querySelector('.split-weight-input');
-            const weight = (weightInput && weightInput.style.display !== 'none') ? parseInt(weightInput.value) || 0 : 0;
-            weights.push(weight);
-        });
-        productsWithSplit.push([productName, amount, weights]);
-    });
-
-    // 2. Gather person names and totals
-    const personNames = Array.from(document.querySelectorAll("#table-header th.person-col input")).map(input => input.value);
-    const totalCells = document.querySelector(".total-row").querySelectorAll("td.person-col");
-    const personTotals = Array.from(totalCells).map(cell => parseFloat(cell.textContent.replace('€', '')) || 0);
-
-    // 3. Prepare data for the fetch request
-    const payload = {
-        products_with_split: productsWithSplit,
-        person_names: personNames,
-        person_totals: personTotals
-    };
-
-    // 4. Send request to backend
-    showLoading(); // Show loading indicator
-    fetch('/generate-pdf', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.blob(); // Get the response as a Blob
-    })
-    .then(blob => {
-        // Create a temporary URL for the blob and trigger a download
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = 'split_receipt_summary.pdf';
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url); // Clean up
-        hideLoading();
-    })
-    .catch(error => {
-        console.error('Error generating PDF:', error);
-        hideLoading();
-        alert('Failed to generate PDF. Please try again.');
-    });
 }

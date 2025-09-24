@@ -44,11 +44,8 @@ if 'GOOGLE_APPLICATION_CREDENTIALS' in os.environ:
 
 # Create client
 client = create_vision_client()
-if not client:
-    print("Failed to create Vision API client")
-    sys.exit(1)
 
-def extract_products_from_receipt(image_path, client):
+def extract_products_from_receipt(image_path):
     """Extract product names and prices from a receipt image."""
     
     with open(image_path, "rb") as f:
@@ -59,7 +56,9 @@ def extract_products_from_receipt(image_path, client):
     
     # Check for errors
     if response.error.message:
-        raise Exception(f'Error: {response.error.message}')
+        raise Exception(f'Vision API Error: {response.error.message}')
+    
+    print("Vision API response received, processing text...")
     
     # Regex for prices (handles negative prices, commas/dots as decimal separators)
     price_pattern = re.compile(r"-?\d+[.,]\d{1,2}")
@@ -142,161 +141,13 @@ def extract_products_from_receipt(image_path, client):
     
     return products
 
-def write_products_to_pdf(products_with_split, person_names, person_totals, output_path="extracted_split_receipt.pdf"):
-    """
-    Writes extracted products, their amounts, the split weights, and the final 
-    person totals to a PDF file.
-
-    Args:
-        products_with_split (list): A list of tuples: (product_name, price, [weights])
-        person_names (list): A list of strings for person headers (e.g., ["Person 1", "Person 2"])
-        person_totals (list): A list of final amounts owed by each person (e.g., [15.90, 10.30, ...])
-        output_path (str): The path to save the PDF.
-    """
-    
-    # --- PDF Setup ---
-    c = canvas.Canvas(output_path, pagesize=letter)
-    width, height = letter
-    
-    # Column positions
-    # Product Name starts at 50
-    # Price starts at 400
-    # Weights columns start from 470
-    x_product = 50
-    x_price = 400
-    x_weights_start = 470
-    x_weights_step = 30 
-    
-    # --- Title and Header ---
-    c.setTitle("Split Receipt Summary")
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(x_product, height - 50, "Detailed Split Receipt")
-    
-    # Draw a line under the title
-    c.line(x_product, height - 70, width - x_product, height - 70)
-    
-    # --- Column Headers ---
-    c.setFont("Helvetica-Bold", 10)
-    y_position = height - 90
-    
-    # Product and Amount header
-    c.drawString(x_product, y_position, "Product")
-    c.drawString(x_price, y_position, "Amount")
-    
-    # Weights headers (P1, P2, P3, P4)
-    x = x_weights_start
-    for name in person_names:
-        # Use only the number (1, 2, 3, 4) for the column header
-        c.drawString(x, y_position, name.split()[-1]) 
-        x += x_weights_step
-        
-    # Line under headers
-    y_position -= 5
-    c.line(x_product, y_position, width - x_product, y_position)
-    y_position -= 15
-    
-    # --- Product Details and Splits ---
-    total_price = 0
-    c.setFont("Helvetica", 9)
-    
-    for product, price, weights in products_with_split:
-        total_price += price
-        
-        if y_position < 100:  # Start new page if needed
-            c.showPage()
-            c.setFont("Helvetica-Bold", 10)
-            y_position = height - 50
-            
-            # Redraw headers on new page
-            c.drawString(x_product, y_position, "Product")
-            c.drawString(x_price, y_position, "Amount")
-            x = x_weights_start
-            for name in person_names:
-                c.drawString(x, y_position, name.split()[-1])
-                x += x_weights_step
-            
-            y_position -= 5
-            c.line(x_product, y_position, width - x_product, y_position)
-            y_position -= 15
-            c.setFont("Helvetica", 9)
-        
-        # Draw product name (left-aligned)
-        c.drawString(x_product, y_position, product)
-        
-        # Draw price (right-aligned in its column)
-        price_text = f"€{price:.2f}"
-        price_width = c.stringWidth(price_text, "Helvetica", 9)
-        c.drawString(x_price + 30 - price_width, y_position, price_text) 
-        
-        # Draw weights (centered in their columns)
-        x = x_weights_start
-        for weight in weights:
-            # Ensure weight is treated as an integer for display
-            weight = int(weight)
-            weight_text = str(weight) if weight > 0 else ""
-            
-            # Center the text within the 30-unit column space
-            weight_width = c.stringWidth(weight_text, "Helvetica", 9)
-            c.drawString(x + (x_weights_step / 2) - (weight_width / 2), y_position, weight_text)
-            x += x_weights_step
-            
-        y_position -= 12 # Less space for product lines
-    
-    # --- Final Totals Section ---
-    if y_position < 100:
-        c.showPage()
-        y_position = height - 50
-    
-    y_position -= 20
-    c.line(x_product, y_position - 10, width - x_product, y_position - 10)
-    y_position -= 30
-    
-    # Draw Grand Total
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(x_product, y_position, "GRAND TOTAL:")
-    
-    total_text = f"€{total_price:.2f}"
-    total_width = c.stringWidth(total_text, "Helvetica-Bold", 12)
-    c.drawString(x_price + 30 - total_width, y_position, total_text)
-    
-    y_position -= 30
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(x_product, y_position, "Person Split Totals")
-    y_position -= 20
-    c.setFont("Helvetica-Bold", 12)
-    
-    # Draw Split Totals
-    for i, (name, total) in enumerate(zip(person_names, person_totals)):
-        if y_position < 30: # Check if a new page is needed for totals
-            c.showPage()
-            y_position = height - 50
-            c.setFont("Helvetica-Bold", 12)
-        
-        person_text = f"{name}:"
-        total_text = f"€{total:.2f}"
-        
-        c.drawString(x_product, y_position, person_text)
-        
-        # Align total amount with the original price column
-        total_width = c.stringWidth(total_text, "Helvetica-Bold", 12)
-        c.drawString(x_price + 30 - total_width, y_position, total_text)
-        
-        y_position -= 20
-        
-    # Add footer
-    c.setFont("Helvetica", 8)
-    c.drawString(50, 30, f"Generated from receipt OCR and Splitter App - {len(products_with_split)} items found")
-    
-    c.save()
-    print(f"PDF saved to: {output_path}")
-
 def write_products_to_json(products, output_path="extracted_products.json"):
     """Write extracted products to a JSON file."""
     
     # Filter out quantity-only patterns for JSON
     filtered_products = []
     for product_name, price in products:
-        # Skip lines that are ONLY quantity/price patterns (e.g., "3 X 3,87", "2 X 1,16")
+        # Skip lines that are ONLY quantity/price patterns
         is_only_quantity = bool(re.match(r'^\s*\d+\s*[xX×*]\s*\d*[.,]?\d*\s*$', product_name))
         is_only_numbers = bool(re.match(r'^\s*\d+\s*$', product_name))
         
@@ -325,3 +176,38 @@ def write_products_to_json(products, output_path="extracted_products.json"):
     
     return receipt_data
 
+# Main execution when run as script
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python ocrtest.py <image_path>")
+        print("Example: python ocrtest.py receipt.jpg")
+        sys.exit(1)
+    
+    image_path = sys.argv[1]
+    
+    try:
+        print(f"Starting OCR processing for: {image_path}")
+        
+        # Extract products from receipt
+        products = extract_products_from_receipt(image_path)
+        
+        if not products:
+            print("No products found in the image")
+            sys.exit(1)
+        
+        # Write to JSON file
+        receipt_data = write_products_to_json(products)
+        
+        print("\nProcessing complete!")
+        print(f"Found {len(products)} products")
+        print(f"Total amount: €{receipt_data['total_amount']:.2f}")
+        
+        # Display products
+        print("\nExtracted Products:")
+        print("-" * 40)
+        for product, price in products:
+            print(f"{product:<25} €{price:.2f}")
+        
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)

@@ -25,9 +25,11 @@ if (!fs.existsSync('uploads')) {
 }
 
 app.post('/process-receipt', upload.single('image'), (req, res) => {
+    console.log('=== RECEIPT PROCESSING STARTED ===');
     console.log('Received POST request to /process-receipt');
     
     if (!req.file) {
+        console.error('No file uploaded');
         return res.status(400).json({ error: 'No file uploaded' });
     }
     
@@ -35,73 +37,119 @@ app.post('/process-receipt', upload.single('image'), (req, res) => {
     const outputJsonPath = 'extracted_products.json';
     
     console.log(`Processing image: ${imagePath}`);
+    console.log(`File size: ${req.file.size} bytes`);
+    console.log(`File mimetype: ${req.file.mimetype}`);
+    
+    // Check if Python script exists
+    if (!fs.existsSync('ocrtest.py')) {
+        console.error('ocrtest.py not found in current directory');
+        console.log('Current directory contents:', fs.readdirSync('.'));
+        return res.status(500).json({ error: 'OCR script not found' });
+    }
     
     // Run the Python OCR script
-    const pythonProcess = spawn('python', ['ocrtest.py', imagePath]);
+    console.log('Starting Python process...');
+    const pythonProcess = spawn('python', ['ocrtest.py', imagePath], {
+        stdio: ['pipe', 'pipe', 'pipe']
+    });
     
     let output = '';
     let errorOutput = '';
     
     pythonProcess.stdout.on('data', (data) => {
         output += data.toString();
-        console.log(`Python output: ${data}`);
+        console.log(`Python stdout: ${data}`);
     });
     
     pythonProcess.stderr.on('data', (data) => {
         errorOutput += data.toString();
-        console.error(`Python error: ${data}`);
+        console.error(`Python stderr: ${data}`);
     });
     
-    pythonProcess.on('close', (code) => {
+    pythonProcess.on('error', (error) => {
+        console.error(`Failed to start Python process: ${error.message}`);
         // Clean up uploaded file
         if (fs.existsSync(imagePath)) {
             fs.unlinkSync(imagePath);
         }
+        return res.status(500).json({ 
+            error: 'Failed to start OCR process', 
+            details: error.message 
+        });
+    });
+    
+    pythonProcess.on('close', (code) => {
+        console.log(`Python process exited with code: ${code}`);
+        console.log(`Python output: ${output}`);
+        console.log(`Python errors: ${errorOutput}`);
+        
+        // Clean up uploaded file
+        if (fs.existsSync(imagePath)) {
+            fs.unlinkSync(imagePath);
+            console.log('Cleaned up uploaded file');
+        }
         
         if (code !== 0) {
-            console.error(`Python script exited with code ${code}`);
+            console.error(`Python script failed with code ${code}`);
             return res.status(500).json({ 
                 error: 'OCR processing failed', 
-                details: errorOutput 
+                details: errorOutput,
+                code: code
             });
         }
         
         // Read the generated JSON file
         try {
             if (fs.existsSync(outputJsonPath)) {
+                console.log('Reading JSON output file...');
                 const jsonData = fs.readFileSync(outputJsonPath, 'utf8');
                 const receiptData = JSON.parse(jsonData);
+                
+                console.log('Successfully parsed JSON:', receiptData);
                 
                 // Clean up JSON file
                 fs.unlinkSync(outputJsonPath);
                 
-                // --- FIX: AGGREGATE DUPLICATE PRODUCTS ---
+                // Aggregate duplicate products
                 const aggregatedData = {};
-                receiptData.products.forEach(item => {
-                    const productName = item.product;
-                    const price = item.price;
+                if (receiptData.products) {
+                    receiptData.products.forEach(item => {
+                        const productName = item.product;
+                        const price = item.price;
+                        
+                        if (aggregatedData[productName]) {
+                            aggregatedData[productName] += price;
+                        } else {
+                            aggregatedData[productName] = price;
+                        }
+                    });
                     
-                    if (aggregatedData[productName]) {
-                        // If product already exists, add to its total
-                        aggregatedData[productName] += price;
-                    } else {
-                        // Otherwise, add it to the new object
-                        aggregatedData[productName] = price;
-                    }
-                });
-
-                // Add the total back to the aggregated data
-                aggregatedData.Totaal = receiptData.total_amount;
-                
-                res.json(aggregatedData);
+                    aggregatedData.Totaal = receiptData.total_amount;
+                    res.json(aggregatedData);
+                } else {
+                    console.error('No products found in JSON output');
+                    res.status(500).json({ error: 'No products extracted from receipt' });
+                }
             } else {
+                console.error(`Output JSON file not found: ${outputJsonPath}`);
                 res.status(500).json({ error: 'No output JSON file generated' });
             }
         } catch (error) {
-            console.error('Error reading JSON output:', error);
-            res.status(500).json({ error: 'Failed to parse OCR results' });
+            console.error('Error reading/parsing JSON output:', error);
+            res.status(500).json({ 
+                error: 'Failed to parse OCR results',
+                details: error.message
+            });
         }
     });
+    
+    // Set a timeout for the Python process
+    setTimeout(() => {
+        if (!pythonProcess.killed) {
+            console.log('Python process timeout, killing...');
+            pythonProcess.kill();
+        }
+    }, 30000); // 30 second timeout
 });
 
 // Test endpoint

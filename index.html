@@ -21,7 +21,7 @@
         <p class="subtitle">Split your bills effortlessly with AI-powered receipt scanning</p>
         <div class="container">
             <!-- File selector hidden -->
-            <input type="file" onchange="readFile(event)" id="json-input" class="styled-input" accept="image/*">
+            <!-- <input type="file" onchange="readFile(event)" id="json-input" class="styled-input" accept="image/*"> -->
             
             <button onclick="openCamera()" id="cameraButton" class="styled-button primary">
                 📷 Scan Receipt
@@ -70,6 +70,7 @@
                         <th class="person-col">Person 2<br><input type="checkbox" onclick="checkAll2();  calculateSplit()" id="check2"></th>
                         <th class="person-col">Person 3<br><input type="checkbox" onclick="checkAll3();  calculateSplit()" id="check3"></th>
                         <th class="person-col">Person 4<br><input type="checkbox" onclick="checkAll4();  calculateSplit()" id="check4"></th>
+                        <th class="delete-col"></th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -100,10 +101,6 @@
     </div>
 
     <div class="action-buttons">
-        <button onclick="generateAndDownloadPDF()" id="printSummaryButton" class="styled-button download">
-            📄 Print Summary
-        </button>
-
         <button onclick="addProductRow()" id="addRowButton" class="styled-button add">
             ➕ Add Product
         </button>
@@ -111,8 +108,6 @@
         <button onclick="reset()" id="resetButton" class="styled-button reset">
             🔄 Reset
         </button>
-
-
     </div>
 
     <footer class="app-footer">
