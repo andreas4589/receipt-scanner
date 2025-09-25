@@ -110,25 +110,34 @@ def extract_products_from_receipt(image_path):
         if any(keyword in line.lower() for keyword in ignore_keywords):
             continue
         
-        # Find price in line
-        price_match = price_pattern.search(line)
+        # Find all prices in the line
+        price_match = price_pattern.findall(line)
         if not price_match:
             continue
-        
-        # Extract price and normalize decimal separator
-        price_str = price_match.group().replace(",", ".")
-        
-        try:
-            price = float(price_str)
-        except ValueError:
+
+        # Normalize decimal separators and convert to float
+        prices = []
+        for p in price_match:
+            try:
+                prices.append(float(p.replace(",", ".")))
+            except ValueError:
+                continue
+
+        if not prices:
             continue
+
+        # Pick the highest price (assumed to be the total for that line)
+        price = max(prices)
+
         
         # Extract product name (everything except the price)
+        # Remove all price tokens from the line to get product name
+        price_matches = price_pattern.findall(line)  # could be ['1.99', '3.98']
+
         tokens = line.split()
-        price_token = price_match.group()
-        
-        # Remove price token from line to get product name
-        product_tokens = [token for token in tokens if token != price_token]
+        # remove all tokens that are price-like
+        product_tokens = [token for token in tokens if token not in price_matches]
+
         if product_tokens:
             # Sort the words in the product name alphabetically
             sorted_tokens = sorted(product_tokens, key=str.lower)

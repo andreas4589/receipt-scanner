@@ -487,12 +487,30 @@ function updateTotalCounter() {
 }
 
 function reset(){
-    const rows = document.querySelectorAll('#table-body tr');
+    const tbody = document.querySelector('#table-body tbody');
+    
+    // Only proceed if tbody exists and has rows
+    if (!tbody) {
+        console.log("No table body found, nothing to reset");
+        return;
+    }
+    
+    const rows = tbody.querySelectorAll('tr');
+    
+    // Only proceed if there are rows
+    if (rows.length === 0) {
+        console.log("No rows found, nothing to reset");
+        return;
+    }
+    
     const lastRow = rows[rows.length - 1];
     
-    // Reset the last row's split totals (excluding the total counter and delete column)
-    for (let i = 2; i < lastRow.cells.length - 1; i++) {
-        lastRow.cells[i].textContent = '0.00';
+    // Check if the last row is actually a total row
+    if (lastRow && lastRow.classList.contains('total-row')) {
+        // Reset the last row's split totals (excluding the total counter and delete column)
+        for (let i = 2; i < lastRow.cells.length - 1; i++) {
+            lastRow.cells[i].textContent = '€0.00';
+        }
     }
 
     // Reset all checkboxes and weight inputs
@@ -508,6 +526,7 @@ function reset(){
         }
     });
 
+    // Reset flip variables
     flip1 = -1;
     flip2 = -1;
     flip3 = -1;
